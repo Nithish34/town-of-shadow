@@ -43,21 +43,148 @@
 
     body {
       background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.04) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.04) 0%, transparent 40%);
       color: var(--text-main);
       font-family: var(--font-body);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
+      position: relative;
     }
 
-    /* Ambient Night Overlay */
-    body.phase-night {
-      background-color: #030408;
-      background-image: radial-gradient(circle at 50% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 60%);
+    /* Background Container & Atmospheric Ken Burns Canvas */
+    #bg-canvas {
+      position: fixed;
+      inset: -5%;
+      width: 110%;
+      height: 110%;
+      z-index: 0;
+      background-position: center center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      transform-origin: center center;
+      animation: kenBurnsZoom 32s ease-in-out infinite alternate;
+      transition: background-image 1.2s ease-in-out, filter 1.2s ease-in-out;
+      will-change: transform;
+    }
+
+    /* Subtle Continuous Ken Burns Zoom Animation */
+    @keyframes kenBurnsZoom {
+      0% {
+        transform: scale(1) translate(0%, 0%);
+      }
+      50% {
+        transform: scale(1.08) translate(-1.5%, -0.8%);
+      }
+      100% {
+        transform: scale(1.15) translate(1.5%, 0.8%);
+      }
+    }
+
+    /* Ambient Radial Contrast Overlay (rgba(11, 15, 23, 0.7) for 100% legibility) */
+    #bg-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(11, 15, 23, 0.7) 0%, rgba(7, 9, 14, 0.9) 85%);
+      transition: background 1s ease-in-out;
+    }
+
+    /* Dynamic Phase Overlays */
+    #bg-overlay::before,
+    #bg-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+    }
+
+    /* Default & LOBBY Phase: Masquerade Theme with Candle Flicker Overlay */
+    #bg-canvas,
+    body.in-lobby #bg-canvas {
+      background-image: url('assets/bg-lobby.jpg');
+    }
+
+    body.in-lobby #bg-overlay::before {
+      opacity: 1;
+      background: radial-gradient(circle at 50% 60%, rgba(245, 158, 11, 0.16) 0%, rgba(217, 119, 6, 0.06) 40%, transparent 75%);
+      animation: candleFlicker 3.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes candleFlicker {
+      0% {
+        opacity: 0.7;
+        filter: brightness(0.95);
+      }
+      25% {
+        opacity: 0.95;
+        filter: brightness(1.12);
+      }
+      50% {
+        opacity: 0.72;
+        filter: brightness(0.98);
+      }
+      75% {
+        opacity: 1;
+        filter: brightness(1.18);
+      }
+      100% {
+        opacity: 0.82;
+        filter: brightness(1.04);
+      }
+    }
+
+    /* NIGHT Phase: Rainy Noir Window with Blue/Red Police Siren Vignette Pulse */
+    body.phase-night #bg-canvas {
+      background-image: url('assets/bg-night.jpg');
+      filter: brightness(0.85) contrast(1.1);
+    }
+
+    body.phase-night #bg-overlay {
+      background: radial-gradient(circle at center, rgba(11, 15, 23, 0.72) 0%, rgba(3, 4, 8, 0.94) 85%);
+    }
+
+    body.phase-night #bg-overlay::after {
+      opacity: 1;
+      animation: policeSirenVignette 4.5s ease-in-out infinite;
+    }
+
+    @keyframes policeSirenVignette {
+      0%, 100% {
+        background: radial-gradient(circle at 15% 25%, rgba(59, 130, 246, 0.22) 0%, transparent 60%);
+        box-shadow: inset 80px 0 120px -20px rgba(59, 130, 246, 0.32), inset 0 0 100px rgba(11, 15, 23, 0.75);
+      }
+      45% {
+        background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.28) 0%, transparent 65%);
+        box-shadow: inset 100px 0 140px -20px rgba(59, 130, 246, 0.4), inset 0 0 120px rgba(11, 15, 23, 0.8);
+      }
+      50% {
+        background: radial-gradient(circle at 85% 25%, rgba(239, 68, 68, 0.22) 0%, transparent 60%);
+        box-shadow: inset -80px 0 120px -20px rgba(239, 68, 68, 0.32), inset 0 0 100px rgba(11, 15, 23, 0.75);
+      }
+      95% {
+        background: radial-gradient(circle at 80% 30%, rgba(239, 68, 68, 0.28) 0%, transparent 65%);
+        box-shadow: inset -100px 0 140px -20px rgba(239, 68, 68, 0.4), inset 0 0 120px rgba(11, 15, 23, 0.8);
+      }
+    }
+
+    /* DAY & TRIAL Phases: Conspiracy Board */
+    body.phase-day #bg-canvas,
+    body.phase-trial #bg-canvas {
+      background-image: url('assets/bg-trial.jpg');
+      filter: brightness(0.8) contrast(1.05);
+    }
+
+    body.phase-day #bg-overlay::before,
+    body.phase-trial #bg-overlay::before {
+      opacity: 1;
+      background: radial-gradient(circle at 50% 25%, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
     }
 
     /* Header & Navigation */
@@ -153,6 +280,8 @@
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+      position: relative;
+      z-index: 10;
     }
 
     /* LOBBY VIEW */
@@ -796,6 +925,79 @@
     .log-item.phase { border-left-color: var(--amber-gold); background: rgba(245, 158, 11, 0.08); }
     .log-item.vote { border-left-color: var(--purple-mystic); background: rgba(139, 92, 246, 0.08); }
 
+    /* Dawn Announcement Newspaper Headline Entrance Animation */
+    .log-item.dawn-headline {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(20, 25, 36, 0.92) 0%, rgba(15, 18, 26, 0.96) 100%), url('assets/news-report.jpg') center/cover no-repeat;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      border-left: 4px solid var(--amber-gold);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin: 0.4rem 0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 18px rgba(245, 158, 11, 0.2);
+      animation: newspaperHeadlineIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transform-origin: center center;
+    }
+
+    @keyframes newspaperHeadlineIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.2) rotate(-15deg) translateY(40px);
+        filter: blur(8px) contrast(1.5);
+      }
+      60% {
+        opacity: 1;
+        transform: scale(1.03) rotate(1deg) translateY(-2px);
+        filter: blur(0) contrast(1.1);
+      }
+      80% {
+        transform: scale(0.99) rotate(-0.5deg) translateY(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg) translateY(0);
+        filter: none;
+      }
+    }
+
+    .dawn-headline .news-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      padding-bottom: 0.35rem;
+      margin-bottom: 0.45rem;
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+    }
+
+    .dawn-headline .news-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--amber-gold);
+      background: rgba(245, 158, 11, 0.15);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .dawn-headline .news-date {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .dawn-headline .news-text {
+      font-family: var(--font-title);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fffbeb;
+      line-height: 1.45;
+    }
+
     /* Chat Messages */
     .chat-msg {
       font-size: 0.85rem;
@@ -1043,6 +1245,34 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
     }
 
+    /* Detective Evidence Dossier Backdrop */
+    #modal-detective .modal-box {
+      background: linear-gradient(135deg, rgba(15, 20, 31, 0.88), rgba(11, 15, 23, 0.94)), url('assets/modal-dossier.jpg') center/cover no-repeat;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 35px rgba(245, 158, 11, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #modal-detective .modal-box::before {
+      content: 'CONFIDENTIAL DOSSIER';
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      font-family: var(--font-title);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--amber-gold);
+      opacity: 0.7;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      background: rgba(15, 20, 31, 0.6);
+      pointer-events: none;
+    }
+
     .modal-title {
       font-family: var(--font-title);
       font-size: 1.8rem;
@@ -1236,7 +1466,10 @@
     }
   </style>
 </head>
-<body>
+<body class="in-lobby">
+  <!-- Atmospheric Background Canvas & Contrast Overlay -->
+  <div id="bg-canvas"></div>
+  <div id="bg-overlay"></div>
 
   <!-- Header -->
   <header>
@@ -1918,18 +2151,27 @@ NIGHT                 GAME OVER</div>
 
       // Audio triggers on phase transitions
       if (prevPhase !== state.phase) {
-        if (state.phase === 'NIGHT') {
-          sound.playNight();
-          document.body.classList.add('phase-night');
-        } else {
-          document.body.classList.remove('phase-night');
-          if (state.phase === 'DAY_DISCUSSION') sound.playDawn();
-        }
+        if (state.phase === 'NIGHT') sound.playNight();
+        else if (state.phase === 'DAY_DISCUSSION') sound.playDawn();
 
         if (state.phase === 'GAME_OVER') {
           sound.playVictory();
           renderGameOverModal(state);
         }
+      }
+
+      // Dynamic Phase Switching for Atmospheric Backgrounds
+      document.body.classList.remove('in-lobby', 'phase-night', 'phase-day', 'phase-trial');
+      if (state.phase === 'LOBBY') {
+        document.body.classList.add('in-lobby');
+      } else if (state.phase === 'NIGHT') {
+        document.body.classList.add('phase-night');
+      } else if (state.phase === 'DAY_DISCUSSION') {
+        document.body.classList.add('phase-day');
+      } else if (state.phase === 'TRIAL_VOTING') {
+        document.body.classList.add('phase-trial');
+      } else {
+        document.body.classList.add('phase-day');
       }
 
       // FEATURE 1: Last Words modal
@@ -2614,10 +2856,31 @@ NIGHT                 GAME OVER</div>
       chatTextInput.value = '';
     });
 
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
     function appendLog(log) {
       const item = document.createElement('div');
-      item.className = `log-item ${log.type}`;
-      item.innerText = log.text;
+      const text = log.text || '';
+      const isDawn = text.includes('Dawn') || text.includes('🌅') || (text.includes('Day ') && text.includes('Discussion begins'));
+
+      if (isDawn) {
+        item.className = `log-item ${log.type || ''} dawn-headline`;
+        item.innerHTML = `
+          <div class="news-header">
+            <span class="news-badge">📰 SPECIAL REPORT</span>
+            <span class="news-date">DAWN EDITION</span>
+          </div>
+          <div class="news-text">${escapeHtml(text)}</div>
+        `;
+      } else {
+        item.className = `log-item ${log.type || ''}`;
+        item.innerText = text;
+      }
+
       tabContentLogs.appendChild(item);
       tabContentLogs.scrollTop = tabContentLogs.scrollHeight;
     }
