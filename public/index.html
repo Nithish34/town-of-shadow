@@ -1,0 +1,2717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mafia - Real-Time Multiplayer Social Deduction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --bg-surface: #0f141f;
+      --bg-card: #161d2d;
+      --bg-card-hover: #1e273d;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(255, 255, 255, 0.16);
+      
+      --mafia-red: #ef4444;
+      --mafia-glow: rgba(239, 68, 68, 0.35);
+      --town-blue: #3b82f6;
+      --town-glow: rgba(59, 130, 246, 0.35);
+      --emerald-green: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.3);
+      --amber-gold: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.3);
+      --purple-mystic: #8b5cf6;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-title: 'Cinzel', serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.04) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Night Overlay */
+    body.phase-night {
+      background-color: #030408;
+      background-image: radial-gradient(circle at 50% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 60%);
+    }
+
+    /* Header & Navigation */
+    header {
+      background: rgba(15, 20, 31, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      font-family: var(--font-title);
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      background: linear-gradient(135deg, #f8fafc 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--mafia-red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .room-badge {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.35rem 0.85rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .room-code {
+      color: var(--amber-gold);
+      font-family: monospace;
+      font-size: 1rem;
+    }
+
+    .sound-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .sound-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-highlight);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* LOBBY VIEW */
+    #view-lobby {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 75vh;
+      width: 100%;
+    }
+
+    .lobby-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lobby-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--mafia-red), var(--purple-mystic), var(--town-blue));
+    }
+
+    .lobby-card h1 {
+      font-family: var(--font-title);
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.1em;
+    }
+
+    .lobby-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      margin-bottom: 1.25rem;
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .input-control {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-control:focus {
+      border-color: var(--town-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.95rem 1.5rem;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      color: white;
+      box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 25px -5px rgba(239, 68, 68, 0.6);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-highlight);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-start:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 25px -5px rgba(16, 185, 129, 0.6);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Lobby Room View */
+    .lobby-room-box {
+      width: 100%;
+      max-width: 720px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+
+    .lobby-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 1rem;
+    }
+
+    .lobby-roster {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    .roster-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .roster-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .roster-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .badge-host { background: rgba(245, 158, 11, 0.2); color: var(--amber-gold); }
+    .badge-bot { background: rgba(139, 92, 246, 0.2); color: var(--purple-mystic); }
+
+    /* HUD (IN-GAME) */
+    #view-game {
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .hud-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.15rem 1.75rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .my-role-badge {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .role-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .role-meta h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .role-meta p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .role-mafia { color: var(--mafia-red); }
+    .role-doctor { color: var(--emerald-green); }
+    .role-detective { color: var(--town-blue); }
+    .role-shadow { color: #c4b5fd; }
+    .role-villager { color: #cbd5e1; }
+
+    .phase-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .phase-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .timer-container {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--town-blue), var(--emerald-green));
+      border-radius: 999px;
+      transition: width 0.1s linear;
+    }
+
+    .progress-fill.urgent {
+      background: linear-gradient(90deg, var(--amber-gold), var(--mafia-red));
+      animation: pulse-urgent 1s infinite alternate;
+    }
+
+    @keyframes pulse-urgent {
+      0% { opacity: 0.8; }
+      100% { opacity: 1; filter: brightness(1.2); }
+    }
+
+    .timer-digits {
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .living-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .living-badge.dead {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--mafia-red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* Game Layout Grid */
+    .game-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .game-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Player Cards Grid */
+    .players-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .player-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .player-card:hover {
+      border-color: var(--border-highlight);
+      background: var(--bg-card-hover);
+    }
+
+    .player-card.is-me {
+      border-color: rgba(59, 130, 246, 0.4);
+      background: rgba(59, 130, 246, 0.06);
+    }
+
+    .player-card.is-ally {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .player-card.is-dead {
+      opacity: 0.45;
+      background: rgba(15, 20, 31, 0.5);
+      border-color: rgba(255, 255, 255, 0.04);
+      filter: grayscale(0.8);
+    }
+
+    .player-card.is-dead .card-name {
+      text-decoration: line-through;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-user {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .card-name {
+      font-weight: 700;
+      font-size: 1rem;
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-status-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .status-alive { background: rgba(16, 185, 129, 0.15); color: var(--emerald-green); }
+    .status-dead { background: rgba(239, 68, 68, 0.15); color: var(--mafia-red); }
+
+    .card-vote-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .vote-tally-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .vote-mini-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .vote-mini-fill {
+      height: 100%;
+      background: var(--mafia-red);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Action Drawer */
+    .action-drawer {
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-drawer-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .action-target-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .target-btn {
+      padding: 0.65rem 1.15rem;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .target-btn:hover:not(:disabled) {
+      border-color: var(--town-blue);
+      transform: translateY(-1px);
+    }
+
+    .target-btn.selected {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--town-blue);
+      color: #93c5fd;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .target-btn.mafia-selected {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--mafia-red);
+      color: #fca5a5;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .target-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .sleeping-box {
+      text-align: center;
+      padding: 1.75rem 1rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .sleeping-icon {
+      font-size: 2.2rem;
+      animation: float-z 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float-z {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* Side Panel: Tabs (Logs & Chat) */
+    .side-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 620px;
+    }
+
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(15, 20, 31, 0.7);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      border-bottom-color: var(--town-blue);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    /* Event Log Items */
+    .log-item {
+      font-size: 0.85rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border-left: 3px solid var(--text-dim);
+      line-height: 1.4;
+    }
+
+    .log-item.kill { border-left-color: var(--mafia-red); background: rgba(239, 68, 68, 0.08); }
+    .log-item.save { border-left-color: var(--emerald-green); background: rgba(16, 185, 129, 0.08); }
+    .log-item.phase { border-left-color: var(--amber-gold); background: rgba(245, 158, 11, 0.08); }
+    .log-item.vote { border-left-color: var(--purple-mystic); background: rgba(139, 92, 246, 0.08); }
+
+    /* Chat Messages */
+    .chat-msg {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .chat-sender {
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: var(--town-blue);
+    }
+    .chat-sender.mafia { color: var(--mafia-red); }
+    .chat-sender.dead { color: var(--text-dim); }
+
+    .chat-text {
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .chat-input-bar {
+      padding: 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 0.5rem;
+      background: var(--bg-card);
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .chat-send-btn {
+      padding: 0.6rem 1rem;
+      background: var(--town-blue);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn#tab-btn-graveyard {
+      color: #c084fc;
+    }
+    .tab-btn#tab-btn-graveyard.active {
+      color: #f3e8ff;
+      border-bottom-color: #a855f7;
+    }
+
+    /* Spectral Graveyard Chat */
+    .chat-msg.graveyard-msg {
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      box-shadow: 0 0 12px rgba(147, 51, 234, 0.15);
+    }
+    .chat-sender.graveyard {
+      color: #d8b4fe;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 800;
+    }
+    .graveyard-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(168, 85, 247, 0.25);
+      color: #f3e8ff;
+      letter-spacing: 0.05em;
+    }
+    .graveyard-text {
+      color: #f5f3ff;
+    }
+
+    .read-only-chat-msg {
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-style: italic;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Lobby Custom Settings Card */
+    .lobby-settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    .settings-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .settings-card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-main);
+    }
+    .settings-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber-gold);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .settings-badge.readonly {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border-color: rgba(148, 163, 184, 0.25);
+    }
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .settings-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .preset-btn-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+    }
+    .preset-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.75rem 0.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .preset-btn:hover:not(:disabled) {
+      border-color: var(--border-highlight);
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+    }
+    .preset-btn.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--town-blue);
+      color: #93c5fd;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.25);
+    }
+    .preset-btn:disabled {
+      cursor: default;
+      opacity: 0.85;
+    }
+    .preset-name {
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .preset-details {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    .preset-btn.active .preset-details {
+      color: #bfdbfe;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .custom-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+    .custom-checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--town-blue);
+      cursor: pointer;
+    }
+    .custom-checkbox-label input[type="checkbox"]:disabled {
+      cursor: default;
+    }
+
+    /* Notification / Detective Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1.5rem;
+    }
+
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-highlight);
+      border-radius: 20px;
+      padding: 2.25rem;
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-title {
+      font-family: var(--font-title);
+      font-size: 1.8rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .role-reveal-table {
+      width: 100%;
+      margin: 1.5rem 0;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .role-reveal-table th, .role-reveal-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .role-reveal-table th {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    /* Toast Notifications */
+    #toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes toast-in {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* FEATURE 2: Random Event Banner */
+    .random-event-banner {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+      border: 1px solid;
+      animation: event-pulse 2s ease-in-out infinite alternate;
+    }
+    .random-event-banner.event-blackout {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #a5b4fc;
+    }
+    .random-event-banner.event-panic {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .random-event-banner.event-safe-night {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    @keyframes event-pulse {
+      0% { box-shadow: 0 0 0 0 transparent; }
+      100% { box-shadow: 0 0 12px 2px rgba(255,255,255,0.08); }
+    }
+
+    /* FEATURE 3: Shoo badge on player cards */
+    .shoo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      background: rgba(251, 146, 60, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, 0.4);
+      letter-spacing: 0.05em;
+    }
+
+    /* FEATURE 1: Last Words modal content */
+    .last-words-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin: 1.25rem 0;
+      max-height: 320px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    .last-words-option {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+      font-family: inherit;
+      font-style: italic;
+      line-height: 1.4;
+    }
+    .last-words-option:hover {
+      border-color: rgba(251, 146, 60, 0.5);
+      background: rgba(251, 146, 60, 0.1);
+      color: #fed7aa;
+    }
+    .last-words-option.selected {
+      border-color: #fb923c;
+      background: rgba(251, 146, 60, 0.2);
+      color: #fed7aa;
+    }
+
+    /* FEATURE 4: Shadow night info panel */
+    .shadow-role-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      font-size: 0.82rem;
+      margin: 0.75rem 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .shadow-role-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    .shadow-role-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      background: rgba(139, 92, 246, 0.25);
+      color: #c4b5fd;
+    }
+    .shadow-team-btn {
+      padding: 0.6rem 1.1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s ease;
+    }
+    .shadow-team-btn.mafia {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .shadow-team-btn.town {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .shadow-team-btn:hover:not(:disabled) {
+      filter: brightness(1.2);
+      transform: translateY(-1px);
+    }
+    .shadow-team-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">MAFIA</div>
+      <div class="brand-badge">Real-Time</div>
+    </div>
+    <div class="header-actions">
+      <div class="room-badge" id="header-room-box" style="display: none;">
+        <span>ROOM</span>
+        <span class="room-code" id="header-room-code">----</span>
+      </div>
+      <button class="sound-btn" id="btn-show-flow" title="View Game-State Flow">📜 Game Flow</button>
+      <button class="sound-btn" id="sound-toggle" title="Toggle Sound">🔊 SFX ON</button>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main>
+
+    <!-- 1. LOBBY VIEW (Join / Room Waiting) -->
+    <section id="view-lobby">
+      <!-- Step 1: Join Form -->
+      <div class="lobby-card" id="lobby-join-form">
+        <h1>Town of Shadows</h1>
+        <p class="lobby-subtitle">Enter your name to start or join a conspiracy.</p>
+
+        <div class="input-group">
+          <label for="player-name-input">Your Pseudonym</label>
+          <input type="text" id="player-name-input" class="input-control" placeholder="e.g. Vito, Sherlock, Elena..." maxlength="18">
+        </div>
+
+        <div class="input-group">
+          <label for="room-code-input">Room Code (Leave blank for new room)</label>
+          <input type="text" id="room-code-input" class="input-control" placeholder="e.g. ABCD" maxlength="6" style="text-transform: uppercase;">
+        </div>
+
+        <button class="btn btn-primary" id="btn-enter-room">
+          <span>Enter Room</span> &rarr;
+        </button>
+      </div>
+
+      <!-- Step 2: In-Room Waiting Screen -->
+      <div class="lobby-room-box" id="lobby-room-view" style="display: none;">
+        <div class="lobby-header-row">
+          <div>
+            <h2 style="font-family: var(--font-title); font-size: 1.6rem; letter-spacing: 0.05em;">Lobby Waiting Room</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Share Room Code: <strong style="color: var(--amber-gold); font-size: 1.1rem; font-family: monospace;" id="display-room-code">----</strong></p>
+          </div>
+          <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">
+            Players: <span id="lobby-player-count" style="color: var(--text-main);">0</span> / 4 min
+          </div>
+        </div>
+
+        <div class="lobby-roster" id="lobby-roster-list">
+          <!-- Roster Cards dynamically injected -->
+        </div>
+
+        <!-- Custom Host Lobby Settings Card -->
+        <div class="lobby-settings-card" id="lobby-settings-panel">
+          <div class="settings-card-header">
+            <div class="settings-card-title">
+              <span>⚙️ Match Pacing &amp; Rules</span>
+            </div>
+            <span class="settings-badge" id="settings-role-badge">Host Controls</span>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-label">Pacing Timers</div>
+            <div class="preset-btn-group" id="preset-btn-group">
+              <button type="button" class="preset-btn" id="btn-pace-blitz" data-pace="BLITZ">
+                <span class="preset-name">⚡ Blitz</span>
+                <span class="preset-details">15s / 25s / 20s</span>
+              </button>
+              <button type="button" class="preset-btn active" id="btn-pace-normal" data-pace="NORMAL">
+                <span class="preset-name">⏱️ Normal</span>
+                <span class="preset-details">30s / 45s / 30s</span>
+              </button>
+              <button type="button" class="preset-btn" id="btn-pace-casual" data-pace="CASUAL">
+                <span class="preset-name">☕ Casual</span>
+                <span class="preset-details">45s / 75s / 45s</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Host Controls -->
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;" id="host-controls">
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-secondary" id="btn-add-bot" style="flex: 1;">
+              <span>🤖 Add Test Bot</span>
+            </button>
+            <button class="btn btn-secondary" id="btn-remove-bot" style="flex: 1;">
+              <span>Remove Bot</span>
+            </button>
+          </div>
+          <button class="btn btn-start" id="btn-start-game" disabled>
+            <span>⚔️ Start Game (Need 4+)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. IN-GAME VIEW -->
+    <section id="view-game">
+      <!-- FEATURE 2: Random Event Banner -->
+      <div class="random-event-banner" id="random-event-banner">
+        <span id="event-banner-icon">⚡</span>
+        <span id="event-banner-text">BLACKOUT active</span>
+      </div>
+
+      <!-- In-Game HUD -->
+      <div class="hud-bar">
+        <!-- Left: Personal Role Card -->
+        <div class="my-role-badge">
+          <div class="role-icon-box" id="hud-role-icon">🎭</div>
+          <div class="role-meta">
+            <h3 id="hud-role-title">Assigning...</h3>
+            <p id="hud-role-desc">Role information loading</p>
+          </div>
+        </div>
+
+        <!-- Center: Phase & Epoch Stateless Countdown Bar -->
+        <div class="phase-center">
+          <div class="phase-title" id="hud-phase-title">
+            <span id="hud-phase-icon">🌙</span>
+            <span id="hud-phase-text">NIGHT 1</span>
+          </div>
+          <div class="timer-container">
+            <div class="progress-track">
+              <div class="progress-fill" id="hud-timer-fill"></div>
+            </div>
+            <div class="timer-digits" id="hud-timer-digits">30s</div>
+          </div>
+        </div>
+
+        <!-- Right: Status Pill -->
+        <div class="living-badge" id="hud-status-badge">
+          <span>●</span>
+          <span id="hud-status-text">ALIVE</span>
+        </div>
+      </div>
+
+      <!-- Layout Grid (Players + Drawer | Logs & Chat) -->
+      <div class="game-grid">
+        <!-- Left Column: Player Cards Grid & Contextual Action Drawer -->
+        <div class="players-container">
+          <div class="section-header">
+            <span>Living Citizens (<span id="living-ratio-text">0/0</span>)</span>
+            <span id="voting-threshold-hint" style="color: var(--amber-gold); display: none;">Majority: <strong id="threshold-number">0</strong> votes</span>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="player-cards-grid" id="game-player-cards">
+            <!-- Dynamically injected player cards -->
+          </div>
+
+          <!-- Dynamic Action Drawer -->
+          <div class="action-drawer" id="action-drawer">
+            <!-- Injected conditionally per role & phase -->
+          </div>
+        </div>
+
+        <!-- Right Column: Tabs (Game Ticker & Chat & Graveyard) -->
+        <div class="side-panel">
+          <div class="tabs-header">
+            <button class="tab-btn active" id="tab-btn-logs">Game Ticker</button>
+            <button class="tab-btn" id="tab-btn-chat">Chat (<span id="chat-channel-label">Public</span>)</button>
+            <button class="tab-btn" id="tab-btn-graveyard" style="display: none;">💀 Graveyard</button>
+          </div>
+
+          <!-- Ticker Content -->
+          <div class="tab-content" id="tab-content-logs">
+            <!-- Game logs injected -->
+          </div>
+
+          <!-- Chat Content -->
+          <div class="tab-content" id="tab-content-chat" style="display: none;">
+            <!-- Chat messages injected -->
+          </div>
+
+          <!-- Graveyard Content -->
+          <div class="tab-content" id="tab-content-graveyard" style="display: none;">
+            <!-- Graveyard messages injected -->
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form class="chat-input-bar" id="chat-form" style="display: none;">
+            <input type="text" class="chat-input" id="chat-text-input" placeholder="Type a message..." maxlength="100">
+            <button type="submit" class="chat-send-btn" id="chat-send-btn">Send</button>
+            <div id="chat-readonly-label" class="read-only-chat-msg" style="display: none;">
+              You are dead (spectating read-only)
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modals & Overlays -->
+
+  <!-- FEATURE 1: Last Words Modal -->
+  <div class="modal-overlay" id="modal-last-words">
+    <div class="modal-box" style="max-width: 520px; text-align: left;">
+      <div style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;">🕯️</div>
+      <h2 class="modal-title" style="text-align: center; font-size: 1.5rem; margin-bottom: 0.4rem;">Last Words</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 0.25rem;" id="lw-prompt-name">Choose your final statement:</p>
+      <p style="color: var(--text-dim); font-size: 0.78rem; text-align: center; margin-bottom: 0.5rem;">⏳ 15 seconds — or silence falls.</p>
+      <div class="last-words-list" id="lw-options-list"></div>
+      <button class="btn btn-primary" id="btn-confirm-last-words" disabled style="margin-top: 0.5rem;">Speak My Last Words</button>
+    </div>
+  </div>
+
+  <!-- 1. Detective Result Modal -->
+  <div class="modal-overlay" id="modal-detective">
+    <div class="modal-box">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;" id="modal-det-icon">🔍</div>
+      <h2 class="modal-title" id="modal-det-title">Investigation Report</h2>
+      <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 1.5rem;" id="modal-det-body">
+        The alignment has been confirmed.
+      </p>
+      <button class="btn btn-primary" id="btn-close-det-modal">Acknowledge</button>
+    </div>
+  </div>
+
+  <!-- 2. Game Over Modal -->
+  <div class="modal-overlay" id="modal-game-over">
+    <div class="modal-box" style="max-width: 600px;">
+      <div style="font-size: 3.5rem; margin-bottom: 0.5rem;" id="modal-go-icon">🏆</div>
+      <h2 class="modal-title" id="modal-go-title">TOWN VICTORIOUS</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;" id="modal-go-desc">All Mafia have been brought to justice.</p>
+
+      <table class="role-reveal-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Role</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="modal-go-roster">
+          <!-- Populated at game over -->
+        </tbody>
+      </table>
+
+      <button class="btn btn-primary" id="btn-return-lobby" style="display: none;">
+        <span>Return to Lobby</span>
+      </button>
+    </div>
+  <!-- FEATURE 4: Shadow Team Choice Modal -->
+  <div class="modal-overlay" id="modal-shadow-choice">
+    <div class="modal-box" style="max-width: 480px;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🌑</div>
+      <h2 class="modal-title" style="font-size: 1.5rem;">Choose Your Allegiance</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+        The time has come, Shadow. You must commit to a side. This choice is permanent.
+      </p>
+      <p style="color: var(--text-dim); font-size: 0.78rem; margin-bottom: 1.5rem;" id="shadow-deadline-hint"></p>
+      <div style="display: flex; gap: 1rem;">
+        <button class="shadow-team-btn mafia" id="btn-shadow-mafia" onclick="chooseShadowTeam('MAFIA')" style="flex:1;">
+          🩸 Join Mafia
+        </button>
+        <button class="shadow-team-btn town" id="btn-shadow-town" onclick="chooseShadowTeam('TOWN')" style="flex:1;">
+          🛡️ Join Town
+        </button>
+      </div>
+      <button class="btn btn-secondary" id="btn-close-shadow-modal" style="margin-top:1rem; padding: 0.5rem 1rem;">Decide Later</button>
+    </div>
+  </div>
+
+  <!-- 3. Game-State Flow Modal -->
+  <div class="modal-overlay" id="modal-game-flow">
+    <div class="modal-box" style="max-width: 580px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 class="modal-title" style="margin: 0; font-size: 1.4rem; font-family: var(--font-title);">Game-State Flow</h2>
+        <button id="btn-close-flow-modal" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
+        <strong style="color: var(--text-main);">Win Conditions:</strong><br>
+        • <strong>Town/Civilians win:</strong> When all Mafia players are eliminated.<br>
+        • <strong>Mafia win:</strong> When the number of living Mafia players becomes greater than the number of living Town players.<br>
+        • Doctor, Detective, Vanilla Villagers, and Shadow-who-chose-Town all count as Town for this calculation.
+      </div>
+
+      <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1rem 1.25rem; font-family: monospace; font-size: 0.82rem; line-height: 1.35; white-space: pre; overflow-x: auto; color: #93c5fd;">
+LOBBY
+  ↓
+ROLE ASSIGNMENT
+  ↓
+NIGHT
+  ↓
+NIGHT RESOLUTION
+  ↓
+DAWN
+  ↓
+DISCUSSION
+  ↓
+VOTING
+  ↓
+VOTE RESOLUTION
+  ↓
+WIN CHECK
+  ↓
+ ┌───────────────────────┐
+ │                       │
+Nobody wins          Someone wins
+ │                       │
+ ↓                       ↓
+NIGHT                 GAME OVER</div>
+
+      <div style="margin-top: 1.25rem; text-align: right;">
+        <button class="btn btn-primary" id="btn-ack-flow" style="padding: 0.5rem 1.25rem;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Socket.io Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // --- Web Audio API Synth (Lazy Lifecycle) ---
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      ensureContext() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            this.ctx = new AudioContextClass();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playNight() {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 1.2);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      }
+
+      playDawn() {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25]; // C major chord
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + (idx * 0.12);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.8);
+        });
+      }
+
+      playVote() {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playKill() {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.5);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+
+      playVictory() {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
+        const triad = [392, 523.25, 659.25, 783.99];
+        triad.forEach((f, i) => {
+          const now = this.ctx.currentTime + (i * 0.15);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 1.2);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // --- Client State ---
+    const socket = io();
+    let currentRoomId = null;
+    let mySessionToken = sessionStorage.getItem('mafia_session_token') || null;
+    let lastState = null;
+    let mafiaPreviewCache = {};
+    let activeTab = 'logs';
+
+    // FEATURE 1: Last Words — currently selected statement index
+    let lastWordsSelectedIndex = null;
+
+    // FEATURE 4: Shadow — track if modal was already shown this round
+    let shadowModalShownRound = -1;
+
+    // UI Elements
+    const viewLobby = document.getElementById('view-lobby');
+    const viewGame = document.getElementById('view-game');
+    const lobbyJoinForm = document.getElementById('lobby-join-form');
+    const lobbyRoomView = document.getElementById('lobby-room-view');
+    const playerNameInput = document.getElementById('player-name-input');
+    const roomCodeInput = document.getElementById('room-code-input');
+    const btnEnterRoom = document.getElementById('btn-enter-room');
+    const displayRoomCode = document.getElementById('display-room-code');
+    const lobbyPlayerCount = document.getElementById('lobby-player-count');
+    const lobbyRosterList = document.getElementById('lobby-roster-list');
+    const btnAddBot = document.getElementById('btn-add-bot');
+    const btnRemoveBot = document.getElementById('btn-remove-bot');
+    const btnStartGame = document.getElementById('btn-start-game');
+    const headerRoomBox = document.getElementById('header-room-box');
+    const headerRoomCode = document.getElementById('header-room-code');
+    const soundToggle = document.getElementById('sound-toggle');
+
+    // In-Game Elements
+    const hudRoleIcon = document.getElementById('hud-role-icon');
+    const hudRoleTitle = document.getElementById('hud-role-title');
+    const hudRoleDesc = document.getElementById('hud-role-desc');
+    const hudPhaseIcon = document.getElementById('hud-phase-icon');
+    const hudPhaseText = document.getElementById('hud-phase-text');
+    const hudTimerDigits = document.getElementById('hud-timer-digits');
+    const hudTimerFill = document.getElementById('hud-timer-fill');
+    const hudStatusBadge = document.getElementById('hud-status-badge');
+    const hudStatusText = document.getElementById('hud-status-text');
+    const gamePlayerCards = document.getElementById('game-player-cards');
+    const actionDrawer = document.getElementById('action-drawer');
+    const livingRatioText = document.getElementById('living-ratio-text');
+    const votingThresholdHint = document.getElementById('voting-threshold-hint');
+    const thresholdNumber = document.getElementById('threshold-number');
+
+    // Panels & Modals
+    const tabBtnLogs = document.getElementById('tab-btn-logs');
+    const tabBtnChat = document.getElementById('tab-btn-chat');
+    const tabBtnGraveyard = document.getElementById('tab-btn-graveyard');
+    const tabContentLogs = document.getElementById('tab-content-logs');
+    const tabContentChat = document.getElementById('tab-content-chat');
+    const tabContentGraveyard = document.getElementById('tab-content-graveyard');
+    const chatForm = document.getElementById('chat-form');
+    const chatTextInput = document.getElementById('chat-text-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatReadonlyLabel = document.getElementById('chat-readonly-label');
+    const chatChannelLabel = document.getElementById('chat-channel-label');
+    const modalDetective = document.getElementById('modal-detective');
+    const btnCloseDetModal = document.getElementById('btn-close-det-modal');
+    const modalGameOver = document.getElementById('modal-game-over');
+    const btnReturnLobby = document.getElementById('btn-return-lobby');
+    const modalGameFlow = document.getElementById('modal-game-flow');
+    const btnShowFlow = document.getElementById('btn-show-flow');
+    const btnCloseFlowModal = document.getElementById('btn-close-flow-modal');
+    const btnAckFlow = document.getElementById('btn-ack-flow');
+
+    if (btnShowFlow) {
+      btnShowFlow.addEventListener('click', () => {
+        if (modalGameFlow) modalGameFlow.style.display = 'flex';
+      });
+    }
+    if (btnCloseFlowModal) {
+      btnCloseFlowModal.addEventListener('click', () => {
+        if (modalGameFlow) modalGameFlow.style.display = 'none';
+      });
+    }
+    if (btnAckFlow) {
+      btnAckFlow.addEventListener('click', () => {
+        if (modalGameFlow) modalGameFlow.style.display = 'none';
+      });
+    }
+
+    // Lobby Settings Elements
+    const btnPaceBlitz = document.getElementById('btn-pace-blitz');
+    const btnPaceNormal = document.getElementById('btn-pace-normal');
+    const btnPaceCasual = document.getElementById('btn-pace-casual');
+    const settingsRoleBadge = document.getElementById('settings-role-badge');
+
+    // Toast helper
+    function showToast(text) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerText = text;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Sound toggle listener
+    soundToggle.addEventListener('click', () => {
+      sound.ensureContext();
+      sound.muted = !sound.muted;
+      soundToggle.innerText = sound.muted ? '🔇 SFX MUTED' : '🔊 SFX ON';
+    });
+
+    // Lazy audio trigger on user entry
+    btnEnterRoom.addEventListener('click', () => {
+      sound.ensureContext();
+      const name = playerNameInput.value.trim();
+      const room = roomCodeInput.value.trim();
+      if (!name) {
+        showToast('Please enter your name.');
+        return;
+      }
+      socket.emit('join_game', {
+        playerName: name,
+        roomId: room || null,
+        sessionToken: mySessionToken
+      });
+    });
+
+    // Enter Room on Enter key
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnEnterRoom.click();
+    });
+    roomCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnEnterRoom.click();
+    });
+
+    // Host Controls
+    btnAddBot.addEventListener('click', () => socket.emit('add_bot'));
+    btnRemoveBot.addEventListener('click', () => socket.emit('remove_bot'));
+    btnStartGame.addEventListener('click', () => socket.emit('start_game'));
+    btnReturnLobby.addEventListener('click', () => {
+      socket.emit('return_to_lobby');
+      modalGameOver.style.display = 'none';
+    });
+
+    // Host Lobby Settings Listeners
+    btnPaceBlitz.addEventListener('click', () => {
+      if (lastState && lastState.isHost) socket.emit('update_settings', { pace: 'BLITZ' });
+    });
+    btnPaceNormal.addEventListener('click', () => {
+      if (lastState && lastState.isHost) socket.emit('update_settings', { pace: 'NORMAL' });
+    });
+    btnPaceCasual.addEventListener('click', () => {
+      if (lastState && lastState.isHost) socket.emit('update_settings', { pace: 'CASUAL' });
+    });
+
+    // Socket Events
+    socket.on('session_established', ({ roomId, sessionToken, isHost }) => {
+      currentRoomId = roomId;
+      mySessionToken = sessionToken;
+      sessionStorage.setItem('mafia_session_token', sessionToken);
+
+      headerRoomBox.style.display = 'flex';
+      headerRoomCode.innerText = roomId;
+      displayRoomCode.innerText = roomId;
+
+      lobbyJoinForm.style.display = 'none';
+      lobbyRoomView.style.display = 'block';
+    });
+
+    socket.on('error_message', (msg) => {
+      showToast('⚠️ ' + msg);
+    });
+
+    socket.on('detective_result', ({ status, targetName, alignment, message }) => {
+      modalDetective.style.display = 'flex';
+      const title = document.getElementById('modal-det-title');
+      const body = document.getElementById('modal-det-body');
+      const icon = document.getElementById('modal-det-icon');
+
+      if (status === 'KILLED_BEFORE_REPORT') {
+        icon.innerText = '💀';
+        title.innerText = 'Assassinated!';
+        body.innerText = message || 'You were killed before you could complete your investigation.';
+      } else if (status === 'BLACKOUT') {
+        icon.innerText = '⚡';
+        title.innerText = 'BLACKOUT!';
+        body.innerText = message || 'Your investigation was suppressed tonight.';
+      } else {
+        icon.innerText = alignment.includes('Guilty') ? '🩸' : '🕊️';
+        title.innerText = `${targetName}`;
+        body.innerHTML = `Alignment Result: <strong style="color: ${alignment.includes('Guilty') ? 'var(--mafia-red)' : 'var(--emerald-green)'}">${alignment}</strong>`;
+      }
+    });
+
+    btnCloseDetModal.addEventListener('click', () => {
+      modalDetective.style.display = 'none';
+    });
+
+    socket.on('mafia_target_preview', (previewData) => {
+      mafiaPreviewCache = previewData;
+      renderActionDrawer();
+    });
+
+    socket.on('action_confirmed', ({ type, targetName }) => {
+      sound.playVote();
+      if (type === 'SHOO') {
+        showToast(`🤫 SHOO used! A random town player has been permanently silenced.`);
+      } else if (type === 'SHADOW_CHOICE') {
+        showToast(`🌑 You have aligned with the ${targetName}. This is now permanent.`);
+        document.getElementById('modal-shadow-choice').style.display = 'none';
+      } else {
+        showToast(`${type} targeted: ${targetName}`);
+      }
+    });
+
+    socket.on('game_log', (logEntry) => {
+      appendLog(logEntry);
+      if (logEntry.type === 'kill') sound.playKill();
+      else if (logEntry.type === 'vote') sound.playVote();
+    });
+
+    socket.on('chat_message', (msg) => {
+      appendChatMessage(msg);
+    });
+
+    // Master Room State Broadcast
+    socket.on('room_state', (state) => {
+      const prevPhase = lastState ? lastState.phase : null;
+      lastState = state;
+
+      if (state.phase === 'LOBBY') {
+        viewLobby.style.display = 'flex';
+        viewGame.style.display = 'none';
+        modalGameOver.style.display = 'none';
+        tabBtnGraveyard.style.display = 'none';
+        tabContentGraveyard.innerHTML = '';
+        renderLobbyRoster(state);
+      } else {
+        viewLobby.style.display = 'none';
+        viewGame.style.display = 'flex';
+        renderInGame(state);
+      }
+
+      // Audio triggers on phase transitions
+      if (prevPhase !== state.phase) {
+        if (state.phase === 'NIGHT') {
+          sound.playNight();
+          document.body.classList.add('phase-night');
+        } else {
+          document.body.classList.remove('phase-night');
+          if (state.phase === 'DAY_DISCUSSION') sound.playDawn();
+        }
+
+        if (state.phase === 'GAME_OVER') {
+          sound.playVictory();
+          renderGameOverModal(state);
+        }
+      }
+
+      // FEATURE 1: Last Words modal
+      if (state.lastWordsPrompt) {
+        showLastWordsModal(state.lastWordsPrompt);
+      } else {
+        document.getElementById('modal-last-words').style.display = 'none';
+      }
+
+      // FEATURE 2: Random event banner
+      renderRandomEventBanner(state.activeRandomEvent);
+
+      // FEATURE 4: Shadow team-choice modal
+      if (state.me && state.me.role === 'SHADOW' && state.myNightContext) {
+        const ctx = state.myNightContext;
+        if (!ctx.hasChosen && ctx.canChooseNow && shadowModalShownRound !== state.round) {
+          shadowModalShownRound = state.round;
+          const hint = document.getElementById('shadow-deadline-hint');
+          if (hint) hint.innerText = `You may choose from Round ${state.shadowChoiceDeadlineRound} onward. Round ${state.round} is now active.`;
+          document.getElementById('modal-shadow-choice').style.display = 'flex';
+        }
+        if (ctx.hasChosen) {
+          document.getElementById('modal-shadow-choice').style.display = 'none';
+        }
+      }
+    });
+
+    // Render Lobby Roster & Settings
+    function renderLobbyRoster(state) {
+      lobbyPlayerCount.innerText = state.players.length;
+      btnStartGame.disabled = !state.isHost || state.players.length < 4;
+      btnStartGame.innerText = state.players.length < 4 
+        ? `⚔️ Need ${4 - state.players.length} More Player(s)` 
+        : `⚔️ Start Game (${state.players.length} Players)`;
+
+      document.getElementById('host-controls').style.display = state.isHost ? 'flex' : 'none';
+
+      lobbyRosterList.innerHTML = state.players.map(p => `
+        <div class="roster-card">
+          <div class="roster-avatar">${p.name.charAt(0).toUpperCase()}</div>
+          <div class="roster-name">${p.name}</div>
+          ${p.isHost ? '<span class="badge-tag badge-host">Host</span>' : ''}
+          ${p.isBot ? '<span class="badge-tag badge-bot">Bot</span>' : ''}
+        </div>
+      `).join('');
+
+      renderLobbySettings(state);
+    }
+
+    function renderLobbySettings(state) {
+      const settings = state.settings || { pace: 'NORMAL' };
+      const isHost = state.isHost;
+
+      if (btnPaceBlitz && btnPaceNormal && btnPaceCasual) {
+        btnPaceBlitz.classList.toggle('active', settings.pace === 'BLITZ');
+        btnPaceNormal.classList.toggle('active', settings.pace === 'NORMAL');
+        btnPaceCasual.classList.toggle('active', settings.pace === 'CASUAL');
+
+        btnPaceBlitz.disabled = !isHost;
+        btnPaceNormal.disabled = !isHost;
+        btnPaceCasual.disabled = !isHost;
+      }
+
+      if (settingsRoleBadge) {
+        settingsRoleBadge.innerText = isHost ? 'Host Controls' : 'Room Rules (Read-Only)';
+        settingsRoleBadge.className = isHost ? 'settings-badge' : 'settings-badge readonly';
+      }
+    }
+
+    // FEATURE 2: Random Event Banner renderer
+    function renderRandomEventBanner(event) {
+      const banner = document.getElementById('random-event-banner');
+      const icon = document.getElementById('event-banner-icon');
+      const text = document.getElementById('event-banner-text');
+      if (!banner) return;
+
+      banner.className = 'random-event-banner';
+      if (event === 'BLACKOUT') {
+        banner.classList.add('event-blackout');
+        banner.style.display = 'flex';
+        icon.innerText = '⚡';
+        text.innerText = 'BLACKOUT active — Detective cannot investigate this night.';
+      } else if (event === 'PANIC') {
+        banner.classList.add('event-panic');
+        banner.style.display = 'flex';
+        icon.innerText = '😱';
+        text.innerText = 'PANIC active — Voting will eliminate TWO players this round!';
+      } else if (event === 'SAFE_NIGHT') {
+        banner.classList.add('event-safe-night');
+        banner.style.display = 'flex';
+        icon.innerText = '🛡️';
+        text.innerText = 'SAFE NIGHT active — Mafia cannot kill anyone tonight.';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // FEATURE 1: Last Words modal
+    function showLastWordsModal({ statements, playerName }) {
+      lastWordsSelectedIndex = null;
+      const modal = document.getElementById('modal-last-words');
+      const nameEl = document.getElementById('lw-prompt-name');
+      const listEl = document.getElementById('lw-options-list');
+      const confirmBtn = document.getElementById('btn-confirm-last-words');
+
+      if (!modal) return;
+      nameEl.innerText = `${playerName}, choose your final statement:`;
+
+      listEl.innerHTML = statements.map((stmt, idx) =>
+        `<button class="last-words-option" onclick="selectLastWord(${idx})" data-idx="${idx}">${stmt}</button>`
+      ).join('');
+
+      confirmBtn.disabled = true;
+      modal.style.display = 'flex';
+    }
+
+    window.selectLastWord = function(idx) {
+      lastWordsSelectedIndex = idx;
+      document.querySelectorAll('.last-words-option').forEach((btn, i) => {
+        btn.classList.toggle('selected', i === idx);
+      });
+      document.getElementById('btn-confirm-last-words').disabled = false;
+    };
+
+    document.getElementById('btn-confirm-last-words').addEventListener('click', () => {
+      if (lastWordsSelectedIndex === null) return;
+      socket.emit('select_last_words', { statementIndex: lastWordsSelectedIndex });
+      document.getElementById('modal-last-words').style.display = 'none';
+      lastWordsSelectedIndex = null;
+    });
+
+    // FEATURE 4: Shadow team choice
+    window.chooseShadowTeam = function(team) {
+      socket.emit('shadow_choose_team', { team });
+    };
+
+    document.getElementById('btn-close-shadow-modal').addEventListener('click', () => {
+      document.getElementById('modal-shadow-choice').style.display = 'none';
+    });
+
+    // Render In-Game HUD, Grid, & Action Drawer
+    function renderInGame(state) {
+      const me = state.me;
+
+      // 1. HUD Role
+      if (me) {
+        let statusLabel = me.alive ? 'ALIVE' : 'DEAD (SPECTATING)';
+        if (me.alive && me.isShooed) statusLabel = '🤫 SILENCED';
+        hudStatusText.innerText = statusLabel;
+        hudStatusBadge.className = 'living-badge ' + (me.alive ? (me.isShooed ? 'dead' : '') : 'dead');
+
+        const roleMap = {
+          'MAFIA': { title: 'Mafia', desc: 'Eliminate innocents under cover of darkness', icon: '🩸', class: 'role-mafia' },
+          'DOCTOR': { title: 'Doctor', desc: 'Choose one citizen each night to save', icon: '💉', class: 'role-doctor' },
+          'DETECTIVE': { title: 'Detective', desc: 'Investigate alignments each night', icon: '🔍', class: 'role-detective' },
+          'VILLAGER': { title: 'Villager', desc: 'Vote during daytime to weed out the Mafia', icon: '🛡️', class: 'role-villager' },
+          'SHADOW': { title: 'Shadow', desc: 'You know all roles. Choose your allegiance wisely.', icon: '🌑', class: 'role-shadow' }
+        };
+
+        const rInfo = roleMap[me.role] || { title: 'Unknown', desc: 'Survive', icon: '🎭', class: '' };
+        hudRoleIcon.innerText = rInfo.icon;
+        hudRoleTitle.innerText = rInfo.title;
+        hudRoleTitle.className = rInfo.class;
+        hudRoleDesc.innerText = rInfo.desc;
+      }
+
+      // 2. HUD Phase Title
+      const phaseInfo = {
+        'NIGHT': { icon: '🌙', text: `NIGHT ${state.round}` },
+        'DAY_DISCUSSION': { icon: '🗣️', text: `DAY ${state.round} DISCUSSION` },
+        'TRIAL_VOTING': { icon: '⚖️', text: `TRIAL & VOTING` },
+        'GAME_OVER': { icon: '🏆', text: `GAME OVER` }
+      }[state.phase] || { icon: '⏳', text: state.phase };
+
+      hudPhaseIcon.innerText = phaseInfo.icon;
+      hudPhaseText.innerText = phaseInfo.text;
+
+      // 3. Player Ratio & Voting Threshold
+      const totalLiving = state.players.filter(p => p.alive).length;
+      livingRatioText.innerText = `${totalLiving}/${state.players.length}`;
+
+      if (state.phase === 'TRIAL_VOTING') {
+        votingThresholdHint.style.display = 'inline';
+        thresholdNumber.innerText = state.votingThreshold;
+      } else {
+        votingThresholdHint.style.display = 'none';
+      }
+
+      // 4. Spectator Graveyard Tab visibility
+      const isDead = me && !me.alive;
+      if (isDead) {
+        tabBtnGraveyard.style.display = 'block';
+      } else {
+        tabBtnGraveyard.style.display = 'none';
+        if (activeTab === 'graveyard') {
+          switchTab('chat');
+        }
+      }
+
+      // 5. Render Player Cards
+      renderPlayerCards(state);
+
+      // 6. Render Action Drawer
+      renderActionDrawer();
+
+      // 7. Update Chat Channel and Input Routing
+      updateChatRouting();
+    }
+
+    // Render Cards
+    function renderPlayerCards(state) {
+      const myId = state.me ? state.me.id : null;
+      const isTrial = state.phase === 'TRIAL_VOTING';
+      const threshold = state.votingThreshold;
+
+      gamePlayerCards.innerHTML = state.players.map(p => {
+        const isMe = p.id === myId;
+        const votesForP = (state.voteTallies && state.voteTallies[p.id]) || 0;
+        const pct = Math.min(100, Math.round((votesForP / threshold) * 100));
+
+        let cardClasses = ['player-card'];
+        if (isMe) cardClasses.push('is-me');
+        if (p.isAlly) cardClasses.push('is-ally');
+        if (!p.alive) cardClasses.push('is-dead');
+
+        // Reveal role if game over or self/ally
+        let roleBadge = '';
+        if (p.role) {
+          roleBadge = `<span class="badge-tag" style="background: rgba(255,255,255,0.1);">${p.role}</span>`;
+        }
+
+        // FEATURE 3: Shoo indicator
+        const shooBadge = p.isShooed
+          ? `<span class="shoo-badge">🤫 Silenced</span>`
+          : '';
+
+        const subLabel = isMe ? '(You)' : (p.isAlly ? '(Mafia Ally)' : '');
+
+        return `
+          <div class="${cardClasses.join(' ')}">
+            <div class="card-top">
+              <div class="card-user">
+                <div class="card-avatar">${p.name.charAt(0).toUpperCase()}</div>
+                <div>
+                  <div class="card-name">${p.name}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${subLabel}</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;">
+                <span class="card-status-pill ${p.alive ? 'status-alive' : 'status-dead'}">
+                  ${p.alive ? 'Alive' : '💀 Dead'}
+                </span>
+                ${shooBadge}
+              </div>
+            </div>
+
+            ${roleBadge ? `<div>${roleBadge}</div>` : ''}
+
+            ${isTrial && p.alive ? `
+              <div class="card-vote-bar">
+                <div class="vote-tally-row">
+                  <span style="color: var(--text-muted);">Votes</span>
+                  <span><strong style="color: var(--mafia-red);">${votesForP}</strong> / ${threshold} req</span>
+                </div>
+                <div class="vote-mini-track">
+                  <div class="vote-mini-fill" style="width: ${pct}%;"></div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Contextual Action Drawer
+    function renderActionDrawer() {
+      if (!lastState) return;
+      const me = lastState.me;
+      const phase = lastState.phase;
+
+      if (!me || !me.alive) {
+        actionDrawer.innerHTML = `
+          <div class="sleeping-box">
+            <div style="font-size: 2rem;">💀</div>
+            <p style="font-weight: 700;">You are spectating from beyond the grave.</p>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">You can observe and chat with fellow spirits.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // NIGHT PHASE ACTIONS
+      if (phase === 'NIGHT') {
+        const livingOtherPlayers = lastState.players.filter(p => p.alive && p.id !== me.id);
+        const allLivingPlayers = lastState.players.filter(p => p.alive);
+
+        if (me.role === 'MAFIA') {
+          // Living innocent targets
+          const targets = lastState.players.filter(p => p.alive && !p.isAlly && p.id !== me.id);
+          const currentTargetId = lastState.myNightContext ? lastState.myNightContext.myCurrentTarget : null;
+          const shooAvailable = lastState.myNightContext && lastState.myNightContext.shooAvailable;
+
+          // Preview teammate votes
+          const previews = Object.entries(mafiaPreviewCache).map(([mid, data]) => {
+            const member = lastState.players.find(p => p.id === mid);
+            return `<span style="font-size: 0.75rem; color: var(--mafia-red);">${member ? member.name : 'Mafia'}: <strong>${data.targetName || 'Undecided'}</strong></span>`;
+          }).join(' | ');
+
+          // FEATURE 2: SAFE_NIGHT notice
+          const safeNightNotice = lastState.activeRandomEvent === 'SAFE_NIGHT'
+            ? `<div style="padding:0.4rem 0.6rem; background:rgba(16,185,129,0.1); border-radius:8px; color:var(--emerald-green); font-size:0.8rem;">🛡️ SAFE NIGHT — Your kill will not succeed tonight.</div>`
+            : '';
+
+          actionDrawer.innerHTML = `
+            <div class="action-drawer-title" style="color: var(--mafia-red);">
+              <span>🩸 Mafia Night Syndicate</span>
+            </div>
+            ${safeNightNotice}
+            ${previews ? `<div style="padding: 0.4rem 0.6rem; background: rgba(239,68,68,0.1); border-radius: 8px;">${previews}</div>` : ''}
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Coordinate with your syndicate. First consensus or plurality target will be slain.</p>
+            <div class="action-target-buttons">
+              ${targets.map(t => `
+                <button class="target-btn ${t.id === currentTargetId ? 'mafia-selected' : ''}" onclick="selectMafiaTarget('${t.id}')">
+                  <span>🗡️ ${t.name}</span>
+                </button>
+              `).join('')}
+            </div>
+            ${shooAvailable ? `
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; margin-top: 0.25rem;">
+              <p style="font-size: 0.8rem; color: #fb923c; font-weight: 700; margin-bottom: 0.5rem;">🤫 SHOO — Permanently silence a random town player (once per game)</p>
+              <button class="target-btn" onclick="useMafiaShoo()" style="border-color: rgba(251,146,60,0.4); color: #fb923c;">
+                <span>🤫 Activate Shoo</span>
+              </button>
+            </div>
+            ` : ''}
+          `;
+        } else if (me.role === 'DOCTOR') {
+          const lastProtectedId = lastState.myNightContext ? lastState.myNightContext.lastProtected : null;
+          const currentTargetId = lastState.myNightContext ? lastState.myNightContext.myCurrentTarget : null;
+
+          actionDrawer.innerHTML = `
+            <div class="action-drawer-title" style="color: var(--emerald-green);">
+              <span>💉 Doctor's Sanctuary</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Protect one citizen tonight. <em>Rule: You cannot protect the same person two nights in a row.</em></p>
+            <div class="action-target-buttons">
+              ${allLivingPlayers.map(t => {
+                const isBlocked = t.id === lastProtectedId;
+                return `
+                  <button class="target-btn ${t.id === currentTargetId ? 'selected' : ''}" 
+                    ${isBlocked ? 'disabled title="Protected last night"' : `onclick="selectDoctorProtect('${t.id}')"`}>
+                    <span>🛡️ ${t.name} ${t.id === me.id ? '(Self)' : ''} ${isBlocked ? '🔒 (Last Protected)' : ''}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else if (me.role === 'DETECTIVE') {
+          const currentTargetId = lastState.myNightContext ? lastState.myNightContext.myCurrentTarget : null;
+          // FEATURE 2: BLACKOUT disables detective UI
+          const isBlackout = lastState.myNightContext && lastState.myNightContext.blackout;
+
+          actionDrawer.innerHTML = isBlackout ? `
+            <div class="action-drawer-title" style="color: var(--town-blue);">
+              <span>🔍 Detective's Stakeout</span>
+            </div>
+            <div style="padding: 0.75rem; background: rgba(99,102,241,0.15); border-radius: 10px; border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; text-align: center;">
+              <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">⚡</div>
+              <strong>BLACKOUT</strong> — Your investigation ability is suppressed tonight. Try again next night.
+            </div>
+          ` : `
+            <div class="action-drawer-title" style="color: var(--town-blue);">
+              <span>🔍 Detective's Stakeout</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Investigate one citizen to uncover if they are Guilty (Mafia) or Innocent (Town).</p>
+            <div class="action-target-buttons">
+              ${livingOtherPlayers.map(t => `
+                <button class="target-btn ${t.id === currentTargetId ? 'selected' : ''}" onclick="selectDetectiveInvestigate('${t.id}')">
+                  <span>🔎 ${t.name}</span>
+                </button>
+              `).join('')}
+            </div>
+          `;
+        } else if (me.role === 'SHADOW') {
+          // FEATURE 4: Shadow drawer — show all roles
+          const ctx = lastState.myNightContext;
+          const allRoles = ctx ? ctx.allRoles : {};
+          const hasChosen = ctx && ctx.hasChosen;
+          const chosenTeam = ctx && ctx.chosenTeam;
+          const canChooseNow = ctx && ctx.canChooseNow;
+          const deadline = ctx && ctx.shadowChoiceDeadlineRound;
+
+          const roleRows = lastState.players.map(p => {
+            const trueRole = allRoles[p.id] || '?';
+            const isMe2 = p.id === me.id;
+            return `
+              <div class="shadow-role-row">
+                <span style="font-weight:600;">${p.name}${isMe2 ? ' (You)' : ''}</span>
+                <span class="shadow-role-badge">${trueRole}</span>
+              </div>
+            `;
+          }).join('');
+
+          const choiceSection = hasChosen
+            ? `<div style="padding:0.6rem; background:rgba(139,92,246,0.15); border-radius:8px; text-align:center; color:#c4b5fd; font-weight:700;">✅ You chose: ${chosenTeam}</div>`
+            : (canChooseNow
+              ? `<div>
+                  <p style="font-size:0.8rem; color:#c4b5fd; margin-bottom:0.5rem;">Time to choose your allegiance:</p>
+                  <div style="display:flex; gap:0.65rem;">
+                    <button class="shadow-team-btn mafia" onclick="chooseShadowTeam('MAFIA')" style="flex:1;">🩸 Mafia</button>
+                    <button class="shadow-team-btn town" onclick="chooseShadowTeam('TOWN')" style="flex:1;">🛡️ Town</button>
+                  </div>
+                </div>`
+              : `<p style="font-size:0.8rem; color:var(--text-dim);">You may choose your allegiance starting Round ${deadline}. Current Round: ${lastState.round}.</p>`);
+
+          actionDrawer.innerHTML = `
+            <div class="action-drawer-title" style="color: #c4b5fd;">
+              <span>🌑 Shadow's Omniscience</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">You know all roles. Do not reveal this information directly.</p>
+            <div class="shadow-role-list">${roleRows}</div>
+            ${choiceSection}
+          `;
+        } else {
+          // Vanilla Villager
+          actionDrawer.innerHTML = `
+            <div class="sleeping-box">
+              <div class="sleeping-icon">🌙</div>
+              <p style="font-weight: 700; color: var(--text-main);">Sleeping... awaiting dawn</p>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">The village sleeps while the shadows move outside. Stay quiet.</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // DAY DISCUSSION PHASE
+      if (phase === 'DAY_DISCUSSION') {
+        actionDrawer.innerHTML = `
+          <div class="action-drawer-title" style="color: var(--amber-gold);">
+            <span>🗣️ Open Town Debate</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+            Discuss the events of last night in public chat. Review who died or who was defended. Prepare your arguments before the formal trial begins!
+          </p>
+        `;
+        return;
+      }
+
+      // TRIAL VOTING PHASE
+      if (phase === 'TRIAL_VOTING') {
+        const livingTargets = lastState.players.filter(p => p.alive && p.id !== me.id);
+        const myVote = lastState.votes ? lastState.votes[me.id] : null;
+        const isPanic = lastState.activeRandomEvent === 'PANIC';
+
+        // FEATURE 3: Shooed players can still vote
+        if (isPanic) {
+          // FEATURE 2: PANIC — 2 votes UI
+          const currentVotes = Array.isArray(myVote) ? myVote : [];
+          const v1 = currentVotes[0] || null;
+          const v2 = currentVotes[1] || null;
+
+          actionDrawer.innerHTML = `
+            <div class="action-drawer-title" style="color: var(--mafia-red);">
+              <span>😱 PANIC — Cast TWO Votes</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #fca5a5;">
+              Select your FIRST vote target, then SECOND vote target. Top 2 most-voted will be eliminated.
+            </p>
+            ${v1 || v2 ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.25rem;">Your votes: [${v1 ? (room_players_name(v1) || v1) : '—'}] and [${v2 ? (room_players_name(v2) || v2) : '—'}]</div>` : ''}
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem;">Click "1st Vote" then "2nd Vote" buttons:</p>
+            <div class="action-target-buttons">
+              ${livingTargets.map(t => `
+                <button class="target-btn ${v1 === t.id ? 'selected' : ''}" onclick="castPanicVote1('${t.id}')" style="font-size:0.8rem;">
+                  <span>1️⃣ ${t.name}</span>
+                </button>
+              `).join('')}
+              <button class="target-btn ${v1 === 'SKIP' ? 'selected' : ''}" onclick="castPanicVote1('SKIP')" style="font-size:0.8rem;">
+                <span>1️⃣ Skip</span>
+              </button>
+            </div>
+            <div class="action-target-buttons" style="margin-top:0.5rem;">
+              ${livingTargets.map(t => `
+                <button class="target-btn ${v2 === t.id ? 'mafia-selected' : ''}" onclick="castPanicVote2('${t.id}')" style="font-size:0.8rem;">
+                  <span>2️⃣ ${t.name}</span>
+                </button>
+              `).join('')}
+              <button class="target-btn ${v2 === 'SKIP' ? 'mafia-selected' : ''}" onclick="castPanicVote2('SKIP')" style="font-size:0.8rem;">
+                <span>2️⃣ Skip</span>
+              </button>
+            </div>
+          `;
+        } else {
+          actionDrawer.innerHTML = `
+            <div class="action-drawer-title" style="color: var(--purple-mystic);">
+              <span>⚖️ Cast Your Execution Vote</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Absolute Majority required: <strong>${lastState.votingThreshold}</strong> votes. Votes can be changed before timer expiry.
+            </p>
+            <div class="action-target-buttons">
+              ${livingTargets.map(t => `
+                <button class="target-btn ${myVote === t.id ? 'selected' : ''}" onclick="castTrialVote('${t.id}')">
+                  <span>🗳️ Vote ${t.name}</span>
+                </button>
+              `).join('')}
+              <button class="target-btn ${myVote === 'SKIP' ? 'selected' : ''}" onclick="castTrialVote('SKIP')">
+                <span>🕊️ Skip Vote</span>
+              </button>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // GAME OVER
+      if (phase === 'GAME_OVER') {
+        actionDrawer.innerHTML = `
+          <div class="action-drawer-title">
+            <span>🏆 Game Concluded</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Review original role reveals in the summary dialog.</p>
+        `;
+      }
+    }
+
+    // Role Actions Emitters
+    window.selectMafiaTarget = function(targetId) {
+      socket.emit('mafia_target', { targetId });
+    };
+
+    window.selectDoctorProtect = function(targetId) {
+      socket.emit('doctor_protect', { targetId });
+    };
+
+    window.selectDetectiveInvestigate = function(targetId) {
+      socket.emit('detective_investigate', { targetId });
+    };
+
+    window.castTrialVote = function(targetId) {
+      socket.emit('cast_vote', { targetId });
+    };
+
+    // FEATURE 3: Shoo emitter
+    window.useMafiaShoo = function() {
+      if (!confirm('Use SHOO? A random town player will be permanently silenced. This can only be done ONCE per game.')) return;
+      socket.emit('mafia_shoo');
+    };
+
+    // FEATURE 2: Panic voting helpers
+    let panicVote1 = null;
+    let panicVote2 = null;
+
+    window.castPanicVote1 = function(targetId) {
+      panicVote1 = targetId;
+      socket.emit('cast_vote', { targetId: panicVote1, secondVoteTargetId: panicVote2 || 'SKIP' });
+    };
+
+    window.castPanicVote2 = function(targetId) {
+      panicVote2 = targetId;
+      socket.emit('cast_vote', { targetId: panicVote1 || 'SKIP', secondVoteTargetId: panicVote2 });
+    };
+
+    // Helper: get player name from id using lastState
+    window.room_players_name = function(id) {
+      if (!lastState) return id;
+      const p = lastState.players.find(p => p.id === id);
+      return p ? p.name : id;
+    };
+
+    // Tab Switching
+    function switchTab(target) {
+      activeTab = target;
+      tabBtnLogs.classList.toggle('active', target === 'logs');
+      tabBtnChat.classList.toggle('active', target === 'chat');
+      tabBtnGraveyard.classList.toggle('active', target === 'graveyard');
+
+      tabContentLogs.style.display = target === 'logs' ? 'flex' : 'none';
+      tabContentChat.style.display = target === 'chat' ? 'flex' : 'none';
+      tabContentGraveyard.style.display = target === 'graveyard' ? 'flex' : 'none';
+
+      updateChatRouting();
+    }
+
+    tabBtnLogs.addEventListener('click', () => switchTab('logs'));
+    tabBtnChat.addEventListener('click', () => switchTab('chat'));
+    tabBtnGraveyard.addEventListener('click', () => switchTab('graveyard'));
+
+    // Chat Channel & Input Routing
+    function updateChatRouting() {
+      if (!lastState || !lastState.me) return;
+      const me = lastState.me;
+      const isDead = !me.alive;
+      const isShooed = me.isShooed; // FEATURE 3
+      const phase = lastState.phase;
+
+      // 1. Logs tab: hide chat input bar
+      if (activeTab === 'logs') {
+        chatForm.style.display = 'none';
+        return;
+      }
+
+      // 2. Graveyard tab: Dead players chat freely with spirits
+      if (activeTab === 'graveyard') {
+        if (isDead) {
+          chatForm.style.display = 'flex';
+          chatTextInput.style.display = 'block';
+          chatTextInput.disabled = false;
+          chatTextInput.placeholder = 'Chat with spirits (dead-only)...';
+          chatSendBtn.style.display = 'block';
+          chatSendBtn.disabled = false;
+          chatReadonlyLabel.style.display = 'none';
+        } else {
+          chatForm.style.display = 'none';
+        }
+        return;
+      }
+
+      // 3. Chat Tab (Public / Mafia)
+      if (activeTab === 'chat') {
+        if (isDead) {
+          // Dead player viewing Public Chat as a spectator (read-only)
+          chatChannelLabel.innerText = 'Public (Spectating)';
+          chatChannelLabel.style.color = 'var(--text-dim)';
+          chatForm.style.display = 'flex';
+          chatTextInput.style.display = 'none';
+          chatSendBtn.style.display = 'none';
+          chatReadonlyLabel.style.display = 'block';
+          chatReadonlyLabel.innerText = 'You are dead (spectating read-only)';
+          return;
+        }
+
+        // FEATURE 3: Shooed players — can see chat, but cannot type
+        if (isShooed) {
+          chatChannelLabel.innerText = 'Public (SILENCED)';
+          chatChannelLabel.style.color = '#fb923c';
+          chatForm.style.display = 'flex';
+          chatTextInput.style.display = 'none';
+          chatSendBtn.style.display = 'none';
+          chatReadonlyLabel.style.display = 'block';
+          chatReadonlyLabel.innerText = '🤫 You have been SILENCED. You can only vote.';
+          return;
+        }
+
+        // Living Player on Chat Tab
+        chatReadonlyLabel.style.display = 'none';
+        if (phase === 'NIGHT') {
+          if (me.role === 'MAFIA') {
+            chatChannelLabel.innerText = 'Mafia Night Channel';
+            chatChannelLabel.style.color = 'var(--mafia-red)';
+            chatForm.style.display = 'flex';
+            chatTextInput.style.display = 'block';
+            chatTextInput.disabled = false;
+            chatTextInput.placeholder = 'Message fellow Mafia...';
+            chatSendBtn.style.display = 'block';
+            chatSendBtn.disabled = false;
+          } else {
+            chatChannelLabel.innerText = 'Night (Muted)';
+            chatChannelLabel.style.color = 'var(--text-muted)';
+            chatForm.style.display = 'none';
+          }
+        } else {
+          chatChannelLabel.innerText = 'Public Discussion';
+          chatChannelLabel.style.color = 'var(--town-blue)';
+          chatForm.style.display = 'flex';
+          chatTextInput.style.display = 'block';
+          chatTextInput.disabled = false;
+          chatTextInput.placeholder = 'Debate with town...';
+          chatSendBtn.style.display = 'block';
+          chatSendBtn.disabled = false;
+        }
+      }
+    }
+
+    // Chat Submission
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = chatTextInput.value.trim();
+      if (!text) return;
+      const channel = (lastState && lastState.me && !lastState.me.alive) ? 'GRAVEYARD' : (activeTab === 'graveyard' ? 'GRAVEYARD' : undefined);
+      socket.emit('send_chat', { text, channel });
+      chatTextInput.value = '';
+    });
+
+    function appendLog(log) {
+      const item = document.createElement('div');
+      item.className = `log-item ${log.type}`;
+      item.innerText = log.text;
+      tabContentLogs.appendChild(item);
+      tabContentLogs.scrollTop = tabContentLogs.scrollHeight;
+    }
+
+    function appendChatMessage(msg) {
+      if (msg.channel === 'GRAVEYARD') {
+        const item = document.createElement('div');
+        item.className = 'chat-msg graveyard-msg';
+        item.innerHTML = `
+          <span class="chat-sender graveyard">
+            👻 ${msg.senderName} <span class="graveyard-tag">[GRAVEYARD]</span>:
+          </span>
+          <span class="chat-text graveyard-text">${msg.text}</span>
+        `;
+        tabContentGraveyard.appendChild(item);
+        tabContentGraveyard.scrollTop = tabContentGraveyard.scrollHeight;
+      } else {
+        const item = document.createElement('div');
+        item.className = 'chat-msg' + (msg.channel === 'MAFIA' ? ' mafia-msg' : '');
+        const senderClass = msg.channel === 'MAFIA' ? 'mafia' : '';
+        item.innerHTML = `
+          <span class="chat-sender ${senderClass}">
+            ${msg.senderName} ${msg.channel === 'MAFIA' ? '[MAFIA]' : ''}:
+          </span>
+          <span class="chat-text">${msg.text}</span>
+        `;
+        tabContentChat.appendChild(item);
+        tabContentChat.scrollTop = tabContentChat.scrollHeight;
+      }
+    }
+
+    // Game Over Modal
+    function renderGameOverModal(state) {
+      modalGameOver.style.display = 'flex';
+      const title = document.getElementById('modal-go-title');
+      const desc = document.getElementById('modal-go-desc');
+      const icon = document.getElementById('modal-go-icon');
+      const roster = document.getElementById('modal-go-roster');
+
+      if (state.winner === 'TOWN') {
+        icon.innerText = '🕊️';
+        title.innerText = 'TOWN VICTORIOUS';
+        title.style.color = 'var(--emerald-green)';
+        desc.innerText = 'All Mafia players have been eliminated! Town wins!';
+      } else {
+        icon.innerText = '🩸';
+        title.innerText = 'MAFIA CONQUEST';
+        title.style.color = 'var(--mafia-red)';
+        desc.innerText = 'The number of living Mafia players is greater than living Town players! Mafia wins!';
+      }
+
+      roster.innerHTML = state.players.map(p => `
+        <tr>
+          <td><strong>${p.name}</strong></td>
+          <td><span class="badge-tag" style="background: rgba(255,255,255,0.1);">${p.role || 'Unknown'}</span></td>
+          <td>${p.alive ? '🟢 Survived' : '💀 Slain'}</td>
+        </tr>
+      `).join('');
+
+      btnReturnLobby.style.display = state.isHost ? 'inline-flex' : 'none';
+    }
+
+    // --- Stateless Epoch Timer Animation Engine ---
+    let totalPhaseDuration = 30000;
+    let currentObservedPhase = null;
+
+    function timerTickLoop() {
+      if (lastState && lastState.phaseEndsAt && lastState.phase !== 'GAME_OVER' && lastState.phase !== 'LOBBY') {
+        if (currentObservedPhase !== lastState.phase) {
+          currentObservedPhase = lastState.phase;
+          totalPhaseDuration = Math.max(1000, lastState.phaseEndsAt - Date.now());
+        }
+
+        const remainingMs = Math.max(0, lastState.phaseEndsAt - Date.now());
+        const secondsRemaining = Math.ceil(remainingMs / 1000);
+        hudTimerDigits.innerText = `${secondsRemaining}s`;
+
+        const pct = Math.max(0, Math.min(100, (remainingMs / totalPhaseDuration) * 100));
+        hudTimerFill.style.width = `${pct}%`;
+
+        if (secondsRemaining <= 5) {
+          hudTimerFill.classList.add('urgent');
+        } else {
+          hudTimerFill.classList.remove('urgent');
+        }
+      } else {
+        hudTimerDigits.innerText = '--';
+        hudTimerFill.style.width = '100%';
+        hudTimerFill.classList.remove('urgent');
+      }
+
+      requestAnimationFrame(timerTickLoop);
+    }
+    requestAnimationFrame(timerTickLoop);
+  </script>
+</body>
+</html>
